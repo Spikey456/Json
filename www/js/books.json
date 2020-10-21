@@ -1,0 +1,32 @@
+[
+    {
+        "id": "1",
+        "title": "Phonegap training",
+        "duration": "Training sa phonegap",
+        "price": "PHP50"
+    },
+    {
+        "id": "2",
+        "title": "Phonegap training v2",
+        "duration": "phonegap v2 ulit pero mas mahal",
+        "price": "PHP5000"
+    },
+    {
+        "id": "3",
+        "title": "Phonegap training v3",
+        "duration": "atoy manen",
+        "price": "PHP500"
+    },
+    {
+        "id": "4",
+        "title": "JSON ni Jason",
+        "duration": "Jason ni json",
+        "price": "PHP5"
+    },
+    {
+        "id": "5",
+        "title": "JSON ni junjun",
+        "duration": "penge payb tawsan",
+        "price": "PHP10"
+    }
+]
