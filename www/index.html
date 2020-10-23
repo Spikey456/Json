@@ -41,6 +41,10 @@
     <link rel="stylesheet" type="text/css" href="css/index.css" />
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <script type="text/javascript" src="js/bootstrap.min.js" ></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-database.js"></script>
+
 
     <style>
         input{
@@ -52,10 +56,29 @@
     </style>
     
     <script type="text/javascript">
+
+        var firebaseConfig = {
+            apiKey: "AIzaSyCrtAOZF_LsREEunsraF9jWthN7l1UkBf0",
+            authDomain: "maimai-89309.firebaseapp.com",
+            databaseURL: "https://maimai-89309.firebaseio.com",
+            projectId: "maimai-89309",
+            storageBucket: "maimai-89309.appspot.com",
+            messagingSenderId: "650135569553",
+            appId: "1:650135569553:web:8fe6972f65f21989eaeb30"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        const dbRef = firebase.database().ref();
+        const courseRefs = dbRef.child('course_details');
+
+        
+ 
         $(document).ready(function() {
             var json = "http://192.168.1.33/Json/www/database/json.php";
             let selectedID = null;
             let updating = 0;
+            let userRef;
             let updateValues = {
                 title: "",
                 duration: "",
@@ -68,7 +91,39 @@
                 $("#duration").val('');
                 $("#price").val('');
                 $("#output").html("")
-                $.getJSON(json, function(result) {
+                userRef = null;
+                
+                courseRefs.on("child_added", snap => {
+                    
+                    let field = snap.val();
+                    console.log(field, " "+ snap)
+                    let id = snap.key
+                    $("#output").append("<tr id='row"+id+"'> <td> <p id='labelTitle"+id+"'>" + field.title + "</p><input hidden class='form-control' type='text' id='updateTitle"+id+"' value='"+field.title+"'></td> <td> <p id='labelDuration"+id+"'>" 
+                        + field.duration + "</p><input hidden class='form-control' type='text' id='updateDuration"+id+"' value='"+field.duration+"'></td> <td> <p id='labelPrice"+id+"'>"
+                        + field.price + "</p><input hidden class='form-control' type='text' id='updatePrice"+id+"' value='"+field.price+"'> </td> <td><button id='del"+id+"' class='delBtn btn btn-danger'>Del</button> <button id='update"+id+
+                        "' class='btn btn-light'>Update</button> "+
+                        "<button id='save"+id+"' hidden class='btn btn-success'>Save</button> "+
+                        "<button id='back"+id+"' hidden class='btn btn-primary'>Back</button>"+
+                        "</td> </tr>")
+                        $(`#del${id}`).bind("click", function(event) {
+                            event.preventDefault()
+                            deleteEntry(id)
+                        });
+                        $(`#update${id}`).bind("click", function(event) {
+                            event.preventDefault()
+                            updateEntry(id)
+                        });
+                        $(`#back${id}`).bind("click", function(event) {
+                            event.preventDefault()
+                            
+                            refresh()
+                        });
+                        $(`#save${id}`).bind("click", function(event) {
+                            event.preventDefault()
+                            saveEntry()
+                        });
+                });
+                /*$.getJSON(json, function(result) {
                     $.each(result, function(i, field) {
                     
                         $("#output").append("<tr id='row"+field.id+"'> <td> <p id='labelTitle"+field.id+"'>" + field.title + "</p><input hidden class='form-control' type='text' id='updateTitle"+field.id+"' value='"+field.title+"'></td> <td> <p id='labelDuration"+field.id+"'>" 
@@ -95,12 +150,12 @@
                             saveEntry()
                         });
                     });
-                });
+                });*/
 
             }
 
             function updateEntry(id){
-            
+                userRef = firebase.database().ref('course_details/'+id);
                 updating = 1;
                 console.log("Updating "+id)
                 if(selectedID !== id && selectedID !== null && updating === 1){
@@ -137,9 +192,20 @@
                 updateValues.title = $(`#updateTitle${selectedID}`).val();
                 updateValues.duration = $(`#updateDuration${selectedID}`).val();
                 updateValues.price = $(`#updatePrice${selectedID}`).val();
-                console.log(updateValues);
+                userRef.update({
+                    title: updateValues.title,
+                    duration: updateValues.duration,
+                    price: updateValues.price
+                }).then(function(){
+                    console.log(updateValues);
+                    alert("Updated");
+                    window.location.reload();
+                }).catch(function(error){
+                    alert("error");
+                })
+               
 
-                var dataString = "id=" + selectedID + "&title=" + updateValues.title + "&duration=" + updateValues.duration + "&price="
+                /*var dataString = "id=" + selectedID + "&title=" + updateValues.title + "&duration=" + updateValues.duration + "&price="
 
                 + updateValues.price + "&update=";
 
@@ -174,7 +240,7 @@
 
                     }
 
-                });
+                });*/
             }
 
 
@@ -184,7 +250,15 @@
             })
             function deleteEntry(id){
                 console.log("Deleting " + id);
-                var dataString = "id="+id
+                userRef = firebase.database().ref('course_details/'+id);
+                userRef.remove().then(function (){
+                    refresh()
+                       
+                    alert("Deleted");
+                }).catch(function(error){
+                    alert("Error")
+                });
+                /*var dataString = "id="+id
 
                 $.ajax({
 
@@ -203,9 +277,7 @@
 
                     success: function(data) {
                         if (data == "success") {
-                        refresh()
-                       
-                        alert("Deleted");
+                        
 
                         } else if (data == "error") {
                             alert("error");
@@ -214,7 +286,7 @@
 
                     }
 
-                });
+                });*/
             }
 
             $(".delBtn").on("hover", function() {
@@ -224,7 +296,17 @@
          
 
             $("#insert").click(function() {
-                    var title = $("#title").val();
+                    let newCourse = {};
+                    newCourse.title = $("#title").val();
+                    newCourse.duration = $("#duration").val();
+                    newCourse.price = $("#price").val();
+                    console.log(newCourse)
+                    courseRefs.push(newCourse, function() {
+                        alert("inserted");
+                        refresh()
+                    })
+
+                    /*var title = $("#title").val();
 
                     var duration = $("#duration").val();
                 
@@ -276,7 +358,7 @@
 
                     }
 
-                    return false;
+                    return false;*/
 
                 });
 
